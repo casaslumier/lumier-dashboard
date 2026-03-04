@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumier – KPIs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#f4f4f2;color:#1a1a1a;min-height:100vh;}
+.hdr{background:#fff;border-bottom:1px solid #e5e5e5;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.brand-name{font-size:20px;letter-spacing:6px;font-weight:300;text-transform:uppercase;}
+.brand-sub{font-size:9px;letter-spacing:4px;color:#999;text-transform:uppercase;}
+.hdr-btns{display:flex;gap:8px;align-items:center;}
+.btn{padding:7px 16px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:opacity .2s;}
+.btn-dark{background:#1a1a1a;color:#fff;}.btn-out{background:#fff;color:#1a1a1a;border:1px solid #ccc;}.btn-red{background:#c0392b;color:#fff;}.btn-blue{background:#3b82f6;color:#fff;}
+.btn:hover{opacity:.8;}
+.nav-tabs{display:flex;gap:4px;background:#fff;padding:0 28px;border-bottom:1px solid #e5e5e5;}
+.tab{padding:11px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:#888;font-weight:500;}
+.tab.active{border-bottom-color:#1a1a1a;color:#1a1a1a;}.tab:hover{color:#1a1a1a;}
+.main{padding:24px 28px;max-width:1500px;margin:0 auto;}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;}
+.modal{background:#fff;border-radius:14px;padding:32px;width:min(640px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);}
+.modal h2{font-size:18px;font-weight:400;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.modal p{font-size:13px;color:#666;margin-bottom:20px;line-height:1.5;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:inherit;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#1a1a1a;}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.form-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.tip{background:#f0f7ff;border-left:3px solid #3b82f6;padding:10px 14px;border-radius:0 6px 6px 0;font-size:12px;color:#1e40af;margin-bottom:16px;line-height:1.7;}
+.err{color:#c0392b;font-size:12px;margin-top:6px;padding:8px 12px;background:#fdecea;border-radius:6px;display:none;}
+.loading{text-align:center;padding:20px;color:#888;font-size:13px;}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:#1a1a1a;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* SECTION DIVIDER */
+.section-divider{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#999;margin:18px 0 10px;padding-bottom:4px;border-bottom:1px solid #eee;}
+/* KPI CARDS */
+.kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;}
+.kpi{background:#fff;border-radius:10px;padding:16px 18px;flex:1;min-width:140px;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.kpi.alert{background:#c0392b;color:#fff;}.kpi.warn{background:#e67e22;color:#fff;}.kpi.ok{background:#27ae60;color:#fff;}.kpi.neutral{background:#3b82f6;color:#fff;}
+.kpi-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:3px;}
+.kpi-val{font-size:21px;font-weight:700;}.kpi-sub{font-size:11px;opacity:.8;margin-top:2px;}
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.charts-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px;}
+.card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:14px;}
+.chart-wrap{position:relative;height:230px;}
+/* PPTO vs CALC */
+.ppto-legend{display:flex;gap:14px;font-size:11px;color:#666;margin-bottom:10px;flex-wrap:wrap;}
+.ppto-dot{width:11px;height:11px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:3px;}
+.ppto-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.ppto-lbl{width:105px;text-align:right;color:#555;flex-shrink:0;font-size:11px;}
+.ppto-bar-wrap{flex:1;position:relative;height:20px;background:#e8f0fe;border-radius:4px;overflow:hidden;}
+.bar-calc{position:absolute;left:0;top:0;height:100%;background:#3b82f6;}
+.bar-inc{position:absolute;top:0;height:100%;background:#ef4444;}
+.bar-sav{position:absolute;top:0;height:100%;background:#22c55e;}
+.ppto-nums{width:130px;text-align:right;font-size:11px;flex-shrink:0;}
+/* TABLE */
+.table-wrap{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 5px rgba(0,0,0,.07);overflow-x:auto;margin-bottom:18px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:#f8f8f6;padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:2px solid #eee;white-space:nowrap;}
+td{padding:8px 12px;border-bottom:1px solid #f0f0f0;white-space:nowrap;}
+tr:hover td{background:#fafaf8;}
+.badge{padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-ok{background:#eafaf1;color:#27ae60;}.badge-warn{background:#fef9e7;color:#d68910;}.badge-alert{background:#fdecea;color:#c0392b;}
+.link{color:#1a1a1a;text-decoration:underline;cursor:pointer;font-weight:600;}
+/* NOTES */
+.note-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#888;font-size:12px;cursor:pointer;}
+.note-cell:hover{color:#1a1a1a;}
+.note-btn{background:none;border:1px dashed #ccc;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;color:#888;}
+.note-btn:hover{border-color:#1a1a1a;color:#1a1a1a;}
+/* TIMELINE */
+.timeline{padding:10px 0;}
+.tl-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.tl-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.tl-dot-ok{background:#27ae60;}.tl-dot-warn{background:#e67e22;}.tl-dot-alert{background:#c0392b;}.tl-dot-neutral{background:#94a3b8;}
+.tl-line{width:2px;height:20px;background:#e5e5e5;margin-left:6px;}
+.tl-lbl{font-size:12px;color:#555;flex:1;}
+.tl-date{font-size:12px;font-weight:600;color:#1a1a1a;}
+.tl-diff{font-size:11px;padding:2px 7px;border-radius:10px;}
+.progress-bar-wrap{height:8px;background:#e8f0fe;border-radius:4px;overflow:hidden;margin-top:6px;}
+.progress-bar{height:100%;background:#3b82f6;border-radius:4px;transition:width .5s;}
+/* PAGOS */
+.pagos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:18px;}
+.pago-card{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.pago-estado-ok{border-left:4px solid #27ae60;}
+.pago-estado-pend{border-left:4px solid #e67e22;}
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:#aaa;}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty h3{font-size:18px;font-weight:400;margin-bottom:8px;color:#888;}
+.empty p{font-size:14px;}
+/* SYNC BADGE */
+.sync-badge{font-size:10px;padding:3px 8px;border-radius:10px;background:#eafaf1;color:#27ae60;font-weight:600;}
+.sync-badge.syncing{background:#fef9e7;color:#d68910;}
+.sync-badge.error{background:#fdecea;color:#c0392b;}
+@media print{.hdr,.nav-tabs,.hdr-btns,.btn{display:none!important;}.charts-grid{grid-template-columns:1fr 1fr;}body{background:#fff;}}
+@media(max-width:900px){.charts-grid,.charts-grid-3{grid-template-columns:1fr;}.form-row,.form-row2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="brand-name">LUMIER</div>
+    <div class="brand-sub">Casas Boutique · KPIs</div>
+  </div>
+  <div class="hdr-btns">
+    <span id="syncBadge" class="sync-badge" style="display:none"></span>
+    <button class="btn btn-out" id="btnRefresh" style="display:none" onclick="refreshCurrent()">↻ Actualizar</button>
+    <button class="btn btn-out" onclick="window.print()">⬇ PDF</button>
+    <button class="btn btn-dark" onclick="openModal()">+ Añadir Proyecto</button>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <div class="tab active" id="tab-global" onclick="showTab('global')">📊 Resumen Global</div>
+  <div class="tab" id="tab-detail" onclick="showTab('detail')" style="display:none">📁 Detalle Proyecto</div>
+</div>
+
+<div class="main">
+  <div id="view-global">
+    <div id="emptyState" class="empty">
+      <div class="empty-icon">🏗️</div>
+      <h3>Sin proyectos cargados</h3>
+      <p>Pulsa <strong>"+ Añadir Proyecto"</strong> y pega la URL de tu Google Sheet.</p>
+      <br>
+      <button class="btn btn-dark" onclick="openModal()">+ Añadir primer proyecto</button>
+    </div>
+    <div id="globalContent" style="display:none">
+      <div class="table-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="card-title" style="margin:0">Todos los proyectos</div>
+          <button class="btn btn-out" style="font-size:11px;padding:5px 12px" onclick="refreshAll()">↻ Actualizar todos</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Proyecto</th><th>Calculadora</th><th>Ppto Inicial</th><th>Actual</th>
+            <th>Desv. Calc.</th><th>Desv. Ppto</th><th>Inicio Obra</th><th>Fin Previsto</th>
+            <th>Retraso</th><th>Coste Retraso</th><th>Estado</th><th>Notas</th><th></th>
+          </tr></thead>
+          <tbody id="globalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-detail" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <span class="link" style="font-size:13px;color:#888;" onclick="showTab('global')">← Volver al resumen</span>
+        <h2 id="detailTitle" style="font-size:28px;font-weight:300;letter-spacing:4px;text-transform:uppercase;margin-top:4px;"></h2>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-blue" onclick="refreshDetail()">↻ Sincronizar</button>
+        <button class="btn btn-out" onclick="window.print()">⬇ PDF</button>
+      </div>
+    </div>
+
+    <!-- TABS internas -->
+    <div style="display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid #e5e5e5;">
+      <div class="tab active" id="dtab-ppto" onclick="showDTab('ppto')" style="padding:8px 14px;font-size:12px;">💰 Presupuesto</div>
+      <div class="tab" id="dtab-tiempo" onclick="showDTab('tiempo')" style="padding:8px 14px;font-size:12px;">📅 Tiempos</div>
+      <div class="tab" id="dtab-pagos" onclick="showDTab('pagos')" style="padding:8px 14px;font-size:12px;">💳 Pagos</div>
+    </div>
+
+    <!-- PRESUPUESTO TAB -->
+    <div id="dtab-content-ppto">
+      <div class="kpi-row" id="detailKPIs"></div>
+      <div class="charts-grid">
+        <div class="card"><div class="card-title">Variación Semanal del Presupuesto</div><div class="chart-wrap"><canvas id="chartPpto"></canvas></div></div>
+        <div class="card">
+          <div class="card-title">Ppto Final vs Calculadora</div>
+          <div class="ppto-legend">
+            <span><span class="ppto-dot" style="background:#3b82f6"></span>Calculadora</span>
+            <span><span class="ppto-dot" style="background:#ef4444"></span>Incremento</span>
+            <span><span class="ppto-dot" style="background:#22c55e"></span>Ahorro</span>
+          </div>
+          <div id="pptoVsCalc"></div>
+        </div>
+        <div class="card"><div class="card-title">Desviación Semanal por Categoría</div><div class="chart-wrap"><canvas id="chartDesv"></canvas></div></div>
+        <div class="card"><div class="card-title">Distribución por Tipo</div><div class="chart-wrap"><canvas id="chartTipo"></canvas></div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="card-title" style="margin-bottom:12px">Detalle por Categoría</div>
+        <table><thead><tr><th>Categoría</th><th>Tipo</th><th>Calculadora</th><th>Ppto Inicial</th><th>Actual</th><th>Desv. vs Calc.</th><th>Estado</th></tr></thead>
+        <tbody id="catBody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- TIEMPOS TAB -->
+    <div id="dtab-content-tiempo" style="display:none">
+      <div class="kpi-row" id="timeKPIs"></div>
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-title">Timeline de Obra</div>
+          <div id="timelineWrap" class="timeline"></div>
+        </div>
+        <div class="card"><div class="card-title">Evolución Tiempo de Obra</div><div class="chart-wrap"><canvas id="chartTiempo"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-title">Actualizar fechas de obra</div>
+        <div class="form-row" style="align-items:end;">
+          <div class="form-group" style="margin:0"><label>Fecha Inicio Obra</label><input type="date" id="edit-inicio"></div>
+          <div class="form-group" style="margin:0"><label>Duración Prevista (días)</label><input type="number" id="edit-diasObra" placeholder="90 o 120"></div>
+          <div class="form-group" style="margin:0"><label>Días de Retraso</label><input type="number" id="edit-retraso" placeholder="0"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-dark" onclick="saveTimeData()">Guardar fechas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGOS TAB -->
+    <div id="dtab-content-pagos" style="display:none">
+      <div class="kpi-row" id="pagosKPIs"></div>
+      <div class="charts-grid">
+        <div class="card"><div class="card-title">Pagos por Categoría</div><div class="chart-wrap"><canvas id="chartPagoscat"></canvas></div></div>
+        <div class="card"><div class="card-title">Evolución de Pagos</div><div class="chart-wrap"><canvas id="chartPagosEvol"></canvas></div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="card-title" style="margin-bottom:12px">Detalle de Pagos</div>
+        <table><thead><tr><th>Concepto</th><th>Proveedor</th><th>Categoría</th><th>Importe</th></tr></thead>
+        <tbody id="pagosBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AÑADIR PROYECTO -->
+<div class="overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>Añadir Proyecto</h2>
+    <p>Pega la URL de tu Google Sheet. El dashboard leerá automáticamente las pestañas <strong>"Seguimiento ppto"</strong> y <strong>"control pagos obra"</strong>.</p>
+    <div class="tip">
+      🔗 La URL debe ser la del Google Sheet completo, por ejemplo:<br>
+      <code style="font-size:11px">https://docs.google.com/spreadsheets/d/XXXXXXX/edit</code>
+    </div>
+    <div class="form-group">
+      <label>URL del Google Sheet</label>
+      <input type="text" id="inp-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+    </div>
+    <div class="form-row2">
+      <div class="form-group"><label>Código / Nombre Proyecto</label><input type="text" id="inp-code" placeholder="ej. A26"></div>
+      <div class="form-group"><label>Precio Venta (€)</label><input type="number" id="inp-venta" placeholder="ej. 3800000"></div>
+    </div>
+    <div class="section-divider">Tiempos de obra</div>
+    <div class="form-row">
+      <div class="form-group"><label>Fecha Inicio Obra</label><input type="date" id="inp-inicio"></div>
+      <div class="form-group"><label>Fecha Fin Prevista (original)</label><input type="date" id="inp-finPrev"></div>
+      <div class="form-group"><label>Fecha Fin Actualizada</label><input type="date" id="inp-finReal"><div style="font-size:10px;color:#888;margin-top:3px">Igual que la prevista al inicio</div></div>
+    </div>
+    <div id="modalRetrasoPreview" style="display:none;margin-top:-6px;margin-bottom:10px;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;"></div>
+    <div class="section-divider">Financiero</div>
+    <div class="form-row2">
+      <div class="form-group">
+        <label>Coste Deuda/Día (€) <span style="color:#3b82f6;font-weight:400;font-size:10px">— calculado automáticamente</span></label>
+        <input type="text" id="inp-deuda" readonly style="background:#f8f8f6;color:#555;" placeholder="Se calcula al introducir precio de venta">
+      </div>
+      <div class="form-group"><label>Umbral Alerta (%)</label><input type="number" id="inp-umbral" placeholder="10" value="10"></div>
+    </div>
+    <div style="font-size:11px;color:#888;margin-top:-8px;margin-bottom:14px;">
+      Fórmula: Precio Venta × 5,716% ÷ 365 días
+    </div>
+    <div id="loadingMsg" class="loading" style="display:none"><span class="spinner"></span>Leyendo datos del Sheet…</div>
+    <div class="err" id="errMsg"></div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-dark" onclick="loadProject()" style="flex:1;padding:11px;font-size:14px;">Cargar Proyecto →</button>
+      <button class="btn btn-out" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTAS -->
+<div class="overlay" id="noteOverlay" style="display:none" onclick="if(event.target===this)closeNote()">
+  <div class="modal" style="max-width:480px">
+    <h2>Notas del Proyecto</h2>
+    <p id="noteProjLabel" style="font-weight:600;color:#1a1a1a;margin-bottom:12px;"></p>
+    <div class="form-group">
+      <label>Nota / Explicación de desviaciones</label>
+      <textarea id="noteText" rows="5" style="resize:vertical;" placeholder="Ej: Incremento en albañilería por aparición de humedades ocultas. Retraso de 2 semanas por huelga de transportistas…"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button class="btn btn-dark" onclick="saveNote()" style="flex:1">Guardar nota</button>
+      <button class="btn btn-out" onclick="closeNote()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAnQdZhmIG_pXSIHvV02xHgziPlkGRPEGmxOcn5c521upEU7XUcdswD8SxcZsHbJ2JmQ/exec';
+const projects = {};
+const charts = {};
+let currentCode = null;
+let noteCode = null;
+
+// ── UTILS ──
+const fmt = n => isNaN(n)||n===null ? '-' : new Intl.NumberFormat('es-ES',{maximumFractionDigits:0}).format(n)+' €';
+const fmtPct = n => isNaN(n)||!isFinite(n) ? '-' : (n>=0?'+':'')+n.toFixed(2)+'%';
+const parseNum = s => {
+  if(!s && s!==0) return 0;
+  if(typeof s==='number') return s;
+  const str = String(s).trim();
+  if(!str||str.includes('#')) return 0;
+  return parseFloat(str.replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;
+};
+const lastNonZero = arr => { for(let i=arr.length-1;i>=0;i--) if(arr[i]!==0) return arr[i]; return 0; };
+const destroyC = id => { if(charts[id]){charts[id].destroy();delete charts[id];} };
+const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('es-ES') : '-';
+const addDays = (dateStr, days) => {
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().split('T')[0];
+};
+const daysBetween = (a,b) => {
+  if(!a||!b) return null;
+  return Math.round((new Date(b)-new Date(a))/(1000*60*60*24));
+};
+const today = () => new Date().toISOString().split('T')[0];
+
+// ── STORAGE ──
+const save = () => {
+  const toSave = {};
+  for(const [k,v] of Object.entries(projects)){
+    toSave[k] = { cfg: v.cfg, notes: v.notes || '' };
+  }
+  try{ localStorage.setItem('lumier_projects', JSON.stringify(toSave)); }catch(e){}
+};
+const loadSaved = () => {
+  try{
+    const raw = localStorage.getItem('lumier_projects');
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    for(const [k,v] of Object.entries(saved)){
+      projects[k] = { cfg: v.cfg, notes: v.notes||'', rows:[], totals:{calc:0,ppto:0,weeks:[],desvs:[]}, weekLabels:[], desvLabels:[], pagos:[] };
+    }
+    renderGlobal();
+    // auto-refresh
+    for(const code of Object.keys(projects)){
+      fetchProject(code, false);
+    }
+  }catch(e){}
+};
+
+// ── MODAL ──
+function openModal(){
+  document.getElementById('errMsg').style.display='none';
+  document.getElementById('loadingMsg').style.display='none';
+  document.getElementById('modalOverlay').style.display='flex';
+}
+function closeModal(){ document.getElementById('modalOverlay').style.display='none'; }
+function showErr(msg){ const e=document.getElementById('errMsg'); e.textContent=msg; e.style.display='block'; }
+
+const INTERES_ANUAL = 0.05716;
+function calcDeudaDia(precioVenta){ return (precioVenta * INTERES_ANUAL) / 365; }
+
+document.getElementById('inp-venta').addEventListener('input', e => {
+  const v = parseFloat(e.target.value) || 0;
+  const deuda = calcDeudaDia(v);
+  document.getElementById('inp-deuda').value = v > 0 ? deuda.toFixed(2) + ' €/día' : '';
+});
+
+// Preview retraso en modal
+['inp-inicio','inp-finPrev','inp-finReal'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', updateModalRetrasoPreview);
+});
+
+function updateModalRetrasoPreview(){
+  const finPrev = document.getElementById('inp-finPrev').value;
+  const finReal = document.getElementById('inp-finReal').value;
+  const preview = document.getElementById('modalRetrasoPreview');
+  if(!finPrev || !finReal){ preview.style.display='none'; return; }
+  const diff = daysBetween(finPrev, finReal);
+  if(diff === null){ preview.style.display='none'; return; }
+  preview.style.display = 'block';
+  if(diff > 0){
+    preview.style.background='#fdecea'; preview.style.color='#c0392b';
+    preview.textContent=`⚠ Retraso de ${diff} días`;
+  } else if(diff < 0){
+    preview.style.background='#eafaf1'; preview.style.color='#27ae60';
+    preview.textContent=`✓ Adelanto de ${Math.abs(diff)} días`;
+  } else {
+    preview.style.background='#f0f7ff'; preview.style.color='#1e40af';
+    preview.textContent='✓ En plazo';
+  }
+}
+
+// Auto-rellenar finReal al poner finPrev
+document.getElementById('inp-finPrev').addEventListener('change', e => {
+  const finReal = document.getElementById('inp-finReal');
+  if(!finReal.value) finReal.value = e.target.value;
+  updateModalRetrasoPreview();
+});
+function calcDeudaDia(precioVenta) {
+  return (precioVenta * INTERES_ANUAL) / 365;
+}
+document.getElementById('inp-venta').addEventListener('input', e => {
+  const v = parseFloat(e.target.value) || 0;
+  const deuda = calcDeudaDia(v);
+  document.getElementById('inp-deuda').value = v > 0 ? deuda.toFixed(2) + ' €/día' : '';
+});
+
+// ── FETCH FROM SHEETS via JSONP ──
+function fetchSheet(url, tab){
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const apiUrl = `${SCRIPT_URL}?url=${encodeURIComponent(url)}&tab=${encodeURIComponent(tab)}&callback=${cbName}`;
+    let done = false;
+
+    window[cbName] = (json) => {
+      done = true;
+      delete window[cbName];
+      script.remove();
+      if(json.error) reject(new Error(json.error + (json.available ? ' · Pestañas: '+json.available.join(', ') : '')));
+      else resolve(json.data);
+    };
+
+    script.onerror = () => {
+      if(!done){ done=true; delete window[cbName]; script.remove(); reject(new Error('No se pudo conectar con el script.')); }
+    };
+    setTimeout(() => {
+      if(!done){ done=true; delete window[cbName]; script.remove(); reject(new Error('Tiempo de espera agotado. Verifica la URL del script.')); }
+    }, 15000);
+
+    script.src = apiUrl;
+    document.head.appendChild(script);
+  });
+}
+
+async function fetchProject(code, showLoading=true){
+  const p = projects[code];
+  if(!p) return;
+  setSyncBadge('syncing', '↻ Sincronizando…');
+  try{
+    const [dataPpto, dataPagos] = await Promise.all([
+      fetchSheet(p.cfg.url, 'Seguimiento ppto'),
+      fetchSheet(p.cfg.url, 'Control Pagos obra').catch(()=>null)
+    ]);
+    const parsed = parseSheetPpto(dataPpto, p.cfg);
+    p.rows = parsed.rows;
+    p.totals = parsed.totals;
+    p.weekLabels = parsed.weekLabels;
+    p.desvLabels = parsed.desvLabels;
+    if(dataPagos) p.pagos = parseSheetPagos(dataPagos);
+    p.lastSync = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    setSyncBadge('ok', '✓ '+p.lastSync);
+    renderGlobal();
+    if(currentCode===code) renderDetail(p);
+  }catch(e){
+    setSyncBadge('error', '✗ Error sync');
+    console.error(e);
+  }
+}
+
+function setSyncBadge(type, text){
+  const b = document.getElementById('syncBadge');
+  b.style.display='inline';
+  b.className='sync-badge'+(type==='syncing'?' syncing':type==='error'?' error':'');
+  b.textContent=text;
+}
+
+// ── LOAD PROJECT ──
+async function loadProject(){
+  const url = document.getElementById('inp-url').value.trim();
+  const code = document.getElementById('inp-code').value.trim();
+  if(!url){ showErr('Pega la URL del Google Sheet.'); return; }
+  if(!code){ showErr('Introduce el código del proyecto.'); return; }
+
+  const cfg = {
+    url, code,
+    inicio: document.getElementById('inp-inicio').value,
+    finPrev: document.getElementById('inp-finPrev').value,
+    finReal: document.getElementById('inp-finReal').value,
+    diasObra: daysBetween(document.getElementById('inp-inicio').value, document.getElementById('inp-finPrev').value) || 120,
+    retraso: daysBetween(document.getElementById('inp-finPrev').value, document.getElementById('inp-finReal').value) || 0,
+    deuda: calcDeudaDia(parseFloat(document.getElementById('inp-venta').value)||0),
+    venta: parseFloat(document.getElementById('inp-venta').value)||0,
+    umbral: parseFloat(document.getElementById('inp-umbral').value)||10,
+  };
+
+  document.getElementById('loadingMsg').style.display='block';
+  document.getElementById('errMsg').style.display='none';
+
+  try{
+    const [dataPpto, dataPagos] = await Promise.all([
+      fetchSheet(url, 'Seguimiento ppto'),
+      fetchSheet(url, 'Control Pagos obra').catch(()=>null)
+    ]);
+    const parsed = parseSheetPpto(dataPpto, cfg);
+    projects[code] = {
+      cfg, notes:'',
+      rows: parsed.rows, totals: parsed.totals,
+      weekLabels: parsed.weekLabels, desvLabels: parsed.desvLabels,
+      pagos: dataPagos ? parseSheetPagos(dataPagos) : [],
+      lastSync: new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})
+    };
+    save();
+    closeModal();
+    renderGlobal();
+    showTab('global');
+    setSyncBadge('ok','✓ Cargado');
+    document.getElementById('btnRefresh').style.display='inline';
+  }catch(e){
+    showErr('Error: '+e.message);
+  }finally{
+    document.getElementById('loadingMsg').style.display='none';
+  }
+}
+
+// ── PARSE PPTO ──
+function parseSheetPpto(data, cfg){
+  let hIdx=-1;
+  for(let i=0;i<data.length;i++){
+    if(data[i].some(c=>String(c).includes('Calculadora')) && data[i].some(c=>String(c).includes('ategor'))){
+      hIdx=i; break;
+    }
+  }
+  if(hIdx<0) throw new Error('No se encontró la cabecera en "Seguimiento ppto".');
+  const h = data[hIdx];
+  const colCalc = h.findIndex(c=>String(c).includes('Calculadora'));
+  const colPpto = h.findIndex(c=>String(c).includes('pto')&&String(c).includes('nicial'));
+  const colCat  = h.findIndex(c=>String(c).includes('ategor'));
+  const colTipo = h.findIndex(c=>String(c).toLowerCase().trim()==='tipo');
+
+  const weekCols=[],weekLabels=[];
+  h.forEach((c,i)=>{ if(/^\d{1,2}\/\d{1,2}$/.test(String(c||'').trim())){weekCols.push(i);weekLabels.push(String(c).trim());} });
+
+  const desvCols=[],desvLabels=[];
+  h.forEach((c,i)=>{ if(String(c||'').includes('esviaci')){desvCols.push(i);desvLabels.push(String(c).replace(/Desviaci[oó]n\s*/i,'').trim());} });
+
+  const rows=[]; let totals=null;
+  for(let i=hIdx+1;i<data.length;i++){
+    const row=data[i];
+    const catRaw=String(row[colCat]||'').trim();
+    if(!catRaw) continue;
+    if(catRaw.toLowerCase()==='total'){
+      totals={ calc:parseNum(row[colCalc]), ppto:parseNum(row[colPpto]), weeks:weekCols.map(c=>parseNum(row[c])), desvs:desvCols.map(c=>parseNum(row[c])) };
+      break;
+    }
+    rows.push({
+      cat:catRaw,
+      tipo:(colTipo>=0?String(row[colTipo]||''):'').trim(),
+      calc:parseNum(row[colCalc]), ppto:parseNum(row[colPpto]),
+      weeks:weekCols.map(c=>parseNum(row[c])),
+      desvs:desvCols.map(c=>parseNum(row[c])),
+    });
+  }
+  if(!totals){
+    totals={
+      calc:rows.reduce((s,r)=>s+r.calc,0), ppto:rows.reduce((s,r)=>s+r.ppto,0),
+      weeks:weekCols.map((_,wi)=>rows.reduce((s,r)=>s+(r.weeks[wi]||0),0)),
+      desvs:desvCols.map((_,di)=>rows.reduce((s,r)=>s+(r.desvs[di]||0),0)),
+    };
+  }
+  return{rows,totals,weekLabels,desvLabels};
+}
+
+// ── PARSE PAGOS ──
+function parseSheetPagos(data){
+  if(!data||!data.length) return [];
+  // find header row
+  let hIdx=0;
+  for(let i=0;i<Math.min(10,data.length);i++){
+    if(data[i].some(c=>String(c).toLowerCase().includes('fecha')||String(c).toLowerCase().includes('importe'))){
+      hIdx=i; break;
+    }
+  }
+  const h = data[hIdx];
+  const cFecha  = h.findIndex(c=>String(c).toLowerCase().includes('fecha'));
+  const cImporte= h.findIndex(c=>String(c).toLowerCase().includes('importe')||String(c).toLowerCase().includes('total'));
+  const cProv   = h.findIndex(c=>String(c).toLowerCase().includes('proveedor')||String(c).toLowerCase().includes('concepto')||String(c).toLowerCase().includes('descripci'));
+  const cCat    = h.findIndex(c=>String(c).toLowerCase().includes('categor'));
+  const cEstado = h.findIndex(c=>String(c).toLowerCase().includes('estado'));
+  const pagos=[];
+  for(let i=hIdx+1;i<data.length;i++){
+    const row=data[i];
+    const importe=parseNum(row[cImporte]);
+    if(!importe) continue;
+    pagos.push({
+      fecha: cFecha>=0 ? String(row[cFecha]||'') : '',
+      proveedor: cProv>=0 ? String(row[cProv]||'') : '',
+      categoria: cCat>=0 ? String(row[cCat]||'') : '',
+      importe,
+      estado: cEstado>=0 ? String(row[cEstado]||'') : '',
+    });
+  }
+  return pagos;
+}
+
+// ── TABS ──
+function showTab(t){
+  document.getElementById('view-global').style.display = t==='global'?'block':'none';
+  document.getElementById('view-detail').style.display = t==='detail'?'block':'none';
+  document.getElementById('tab-global').className = 'tab'+(t==='global'?' active':'');
+  document.getElementById('tab-detail').className = 'tab'+(t==='detail'?' active':'');
+  document.getElementById('btnRefresh').style.display = t==='detail'?'inline':'none';
+}
+function showDTab(t){
+  ['ppto','tiempo','pagos'].forEach(n=>{
+    document.getElementById('dtab-content-'+n).style.display = n===t?'block':'none';
+    document.getElementById('dtab-'+n).className = 'tab'+(n===t?' active':'');
+  });
+  // Renderizar la pestaña al hacer clic
+  if(currentCode){
+    const p = projects[currentCode];
+    if(t==='tiempo') renderTiempos(p);
+    else if(t==='pagos') renderPagos(p);
+  }
+}
+
+// ── GLOBAL ──
+function renderGlobal(){
+  const codes = Object.keys(projects);
+  document.getElementById('emptyState').style.display = codes.length?'none':'block';
+  document.getElementById('globalContent').style.display = codes.length?'block':'none';
+  const tbody = document.getElementById('globalBody'); tbody.innerHTML='';
+  for(const code of codes){
+    const {cfg,totals,notes} = projects[code];
+    if(!totals) continue;
+    const actual = lastNonZero(totals.weeks)||totals.calc;
+    const dCalc = totals.calc ? ((actual-totals.calc)/totals.calc)*100 : 0;
+    const dPpto = totals.ppto ? ((actual-totals.ppto)/totals.ppto)*100 : 0;
+    const cr = cfg.deuda*cfg.retraso;
+    const finPrev = cfg.inicio ? addDays(cfg.inicio, cfg.diasObra) : null;
+    const finReal = cfg.inicio && cfg.retraso ? addDays(cfg.inicio, cfg.diasObra+cfg.retraso) : finPrev;
+    const lv = Math.abs(dCalc)>cfg.umbral?'alert':Math.abs(dCalc)>cfg.umbral/2?'warn':'ok';
+    const bc = lv==='alert'?'badge-alert':lv==='warn'?'badge-warn':'badge-ok';
+    const et = lv==='alert'?'⚠ Alerta':lv==='warn'?'⚡ Atención':'✓ OK';
+    const notePreview = notes ? `<span class="note-cell" title="${notes}" onclick="openNote('${code}')">${notes}</span>` : `<button class="note-btn" onclick="openNote('${code}')">+ nota</button>`;
+    tbody.innerHTML+=`<tr>
+      <td><span class="link" onclick="openDetail('${code}')">${code}</span></td>
+      <td>${fmt(totals.calc)}</td><td>${fmt(totals.ppto)}</td><td><strong>${fmt(actual)}</strong></td>
+      <td style="color:${dCalc>0?'#c0392b':'#27ae60'};font-weight:600">${fmtPct(dCalc)}</td>
+      <td style="color:${dPpto>0?'#c0392b':'#27ae60'};font-weight:600">${fmtPct(dPpto)}</td>
+      <td>${cfg.inicio?fmtDate(cfg.inicio):'-'}</td>
+      <td>${finReal?fmtDate(finReal):'-'}</td>
+      <td style="color:${cfg.retraso>0?'#c0392b':'#27ae60'};font-weight:600">${cfg.retraso>0?'+'+cfg.retraso+' días':'En plazo'}</td>
+      <td style="color:${cr>0?'#c0392b':'#555'};font-weight:600">${cr>0?fmt(cr):'-'}</td>
+      <td><span class="badge ${bc}">${et}</span></td>
+      <td>${notePreview}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-out" style="padding:4px 10px;font-size:12px" onclick="openDetail('${code}')">Ver →</button>
+        <button class="btn btn-red" style="padding:4px 10px;font-size:12px" onclick="removeProj('${code}')">✕</button>
+      </td>
+    </tr>`;
+  }
+}
+function removeProj(code){ if(confirm('¿Eliminar proyecto '+code+'?')){ delete projects[code]; save(); renderGlobal(); } }
+async function refreshAll(){ for(const code of Object.keys(projects)) await fetchProject(code); }
+function refreshCurrent(){ if(currentCode) fetchProject(currentCode); }
+function refreshDetail(){ if(currentCode) fetchProject(currentCode); }
+
+// ── DETAIL ──
+const CAT_COLORS={'Demoliciones y actuaciones previas':'#94a3b8','Albañileria':'#ef4444','Albañilería':'#ef4444','Fontanería y saneamiento':'#f97316','Calefacción':'#eab308','Electricidad e iluminación obra':'#84cc16','Climatización':'#22d3ee','Pintura':'#f472b6','Otros obra':'#6b7280','Cocina':'#84cc16','Carpinteria interior':'#8b5cf6','Muebles a medida':'#06b6d4','Ventanas':'#ec4899','Tarima':'#d97706','Alicatado y solado':'#64748b','Baños y grifería':'#0ea5e9','Interiorismo reformista':'#10b981','Otros interiorismo':'#6366f1','Mobiliario':'#f59e0b','Cerrajeria':'#78716c','Exterior':'#4ade80'};
+const catColor = c => CAT_COLORS[c.trim()]||`hsl(${[...c].reduce((h,ch)=>ch.charCodeAt(0)+((h<<5)-h),0)%360},55%,52%)`;
+
+function openDetail(code){
+  currentCode = code;
+  document.getElementById('detailTitle').textContent = code;
+  document.getElementById('tab-detail').style.display='inline-block';
+  showTab('detail');
+  showDTab('ppto');
+  renderDetail(projects[code]);
+}
+
+function renderDetail(p){
+  if(!p||!p.totals) return;
+  renderPpto(p);
+  // Solo renderizar la pestaña activa para evitar errores con canvas ocultos
+  const tabActiva = document.querySelector('.tab.active[id^="dtab-"]');
+  const tabId = tabActiva ? tabActiva.id.replace('dtab-','') : 'ppto';
+  if(tabId==='tiempo') renderTiempos(p);
+  else if(tabId==='pagos') renderPagos(p);
+}
+
+// ── PRESUPUESTO ──
+function renderPpto(p){
+  const{cfg,rows,totals,weekLabels,desvLabels}=p;
+  const actual=lastNonZero(totals.weeks)||totals.calc;
+  const dCalc=totals.calc?((actual-totals.calc)/totals.calc)*100:0;
+  const dPpto=totals.ppto?((actual-totals.ppto)/totals.ppto)*100:0;
+  const cr=cfg.deuda*cfg.retraso;
+
+  document.getElementById('detailKPIs').innerHTML=`
+    <div class="kpi ${cfg.retraso>0?'alert':'ok'}"><div class="kpi-lbl">Coste Deuda/Día</div><div class="kpi-val">${fmt(cfg.deuda)}</div><div class="kpi-sub">Retraso: ${cfg.retraso} días</div></div>
+    <div class="kpi ${cfg.retraso>0?'warn':'ok'}"><div class="kpi-lbl">Coste Retraso</div><div class="kpi-val">${cr>0?fmt(cr):'-'}</div><div class="kpi-sub">${cfg.retraso>0?cfg.retraso+' días × '+fmt(cfg.deuda)+'/día':'Sin retraso'}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Ppto Final Actual</div><div class="kpi-val">${fmt(actual)}</div><div class="kpi-sub">Calc: ${fmt(totals.calc)}</div></div>
+    <div class="kpi ${Math.abs(dCalc)>cfg.umbral?'warn':'ok'}"><div class="kpi-lbl">Desv. vs Calculadora</div><div class="kpi-val">${fmtPct(dCalc)}</div><div class="kpi-sub">vs Ppto inicial: ${fmtPct(dPpto)}</div></div>
+  `;
+
+  // Chart 1 – Semanal
+  const wL=['Calculadora','Ppto Inicial',...weekLabels];
+  const wD=[totals.calc,totals.ppto,...totals.weeks];
+  destroyC('chartPpto');
+  charts['chartPpto']=new Chart(document.getElementById('chartPpto'),{type:'bar',
+    data:{labels:wL,datasets:[{data:wD,backgroundColor:wD.map((_,i)=>i<2?'#93c5fd':'#3b82f6'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
+      scales:{x:{ticks:{font:{size:8},maxRotation:45}},y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k €',font:{size:9}}}}}});
+
+  // Chart 2 – Ppto vs Calc por tipo
+  const tipoData={};
+  for(const r of rows){
+    if(!tipoData[r.tipo])tipoData[r.tipo]={calc:0,actual:0};
+    tipoData[r.tipo].calc+=r.calc;
+    tipoData[r.tipo].actual+=lastNonZero(r.weeks)||r.calc;
+  }
+  const maxV=Math.max(...Object.values(tipoData).map(g=>Math.max(g.calc,g.actual)),1);
+  const tiposOrder=['Calidad','Interiorismo','Mobiliario','Obra'];
+  const tiposShow=[...tiposOrder.filter(t=>tipoData[t]),...Object.keys(tipoData).filter(t=>!tiposOrder.includes(t))];
+  let html='';
+  for(const tipo of tiposShow){
+    const g=tipoData[tipo];if(!g)continue;
+    const diff=g.actual-g.calc,isInc=diff>0;
+    const cP=(g.calc/maxV)*100,dP=Math.abs(diff/maxV)*100;
+    html+=`<div class="ppto-row"><div class="ppto-lbl">${tipo}</div>
+      <div class="ppto-bar-wrap"><div class="bar-calc" style="width:${cP.toFixed(1)}%"></div><div class="${isInc?'bar-inc':'bar-sav'}" style="left:${cP.toFixed(1)}%;width:${dP.toFixed(1)}%"></div></div>
+      <div class="ppto-nums">${diff!==0?`<span style="color:${isInc?'#ef4444':'#22c55e'};font-size:10px">${isInc?'+':''}${Math.abs(diff).toLocaleString('es-ES')}</span> `:''}<strong>${g.actual.toLocaleString('es-ES')}</strong></div>
+    </div>`;
+  }
+  const tC=Object.values(tipoData).reduce((s,g)=>s+g.calc,0);
+  const tA=Object.values(tipoData).reduce((s,g)=>s+g.actual,0);
+  const tD=tA-tC,tIsI=tD>0,tcP=(tC/maxV)*100,tdP=Math.abs(tD/maxV)*100;
+  html+=`<div class="ppto-row" style="border-top:1px solid #eee;padding-top:6px;margin-top:4px;font-weight:700;">
+    <div class="ppto-lbl">Total</div>
+    <div class="ppto-bar-wrap"><div class="bar-calc" style="width:${tcP.toFixed(1)}%"></div><div class="${tIsI?'bar-inc':'bar-sav'}" style="left:${tcP.toFixed(1)}%;width:${tdP.toFixed(1)}%"></div></div>
+    <div class="ppto-nums">${tD!==0?`<span style="color:${tIsI?'#ef4444':'#22c55e'};font-size:10px">${tIsI?'+':''}${Math.abs(tD).toLocaleString('es-ES')}</span> `:''}<strong>${tA.toLocaleString('es-ES')}</strong></div>
+  </div>`;
+  document.getElementById('pptoVsCalc').innerHTML=html;
+
+  // Chart 3 – Desviación por categoría
+  const catG={};
+  for(const r of rows){if(!catG[r.cat])catG[r.cat]=new Array(desvLabels.length).fill(0);for(let i=0;i<r.desvs.length;i++)catG[r.cat][i]+=r.desvs[i];}
+  destroyC('chartDesv');
+  charts['chartDesv']=new Chart(document.getElementById('chartDesv'),{type:'bar',
+    data:{labels:desvLabels,datasets:Object.entries(catG).map(([cat,vals])=>({label:cat,data:vals,backgroundColor:catColor(cat),stack:'s',borderRadius:2}))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:8},boxWidth:9}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{stacked:true,ticks:{font:{size:8},maxRotation:45}},y:{stacked:true,ticks:{callback:v=>(v/1000).toFixed(0)+'k',font:{size:9}}}}}});
+
+  // Chart 4 – Donut por tipo
+  const tipoLabels=Object.keys(tipoData);
+  const tipoVals=tipoLabels.map(t=>tipoData[t].actual);
+  const tipoColors=['#3b82f6','#f97316','#8b5cf6','#22c55e','#ef4444','#eab308'];
+  destroyC('chartTipo');
+  charts['chartTipo']=new Chart(document.getElementById('chartTipo'),{type:'doughnut',
+    data:{labels:tipoLabels,datasets:[{data:tipoVals,backgroundColor:tipoColors,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:11}},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)}}}}});
+
+  // Table
+  const catMap={};
+  for(const r of rows){
+    if(!catMap[r.cat])catMap[r.cat]={tipo:r.tipo,calc:0,ppto:0,actual:0};
+    catMap[r.cat].calc+=r.calc; catMap[r.cat].ppto+=r.ppto;
+    catMap[r.cat].actual+=lastNonZero(r.weeks)||r.calc;
+  }
+  const catTb=document.getElementById('catBody'); catTb.innerHTML='';
+  for(const[cat,g]of Object.entries(catMap)){
+    const dp=g.calc?((g.actual-g.calc)/g.calc)*100:0;
+    const bc=Math.abs(dp)<5?'badge-ok':Math.abs(dp)<cfg.umbral?'badge-warn':'badge-alert';
+    const et=Math.abs(dp)<5?'✓ OK':Math.abs(dp)<cfg.umbral?'⚡ Atención':'⚠ Alerta';
+    catTb.innerHTML+=`<tr><td>${cat}</td><td>${g.tipo}</td><td>${fmt(g.calc)}</td><td>${fmt(g.ppto)}</td><td><strong>${fmt(g.actual)}</strong></td><td style="color:${dp>0?'#c0392b':'#27ae60'};font-weight:600">${fmtPct(dp)}</td><td><span class="badge ${bc}">${et}</span></td></tr>`;
+  }
+}
+
+// ── TIEMPOS ──
+function renderTiempos(p){
+  const{cfg,weekLabels}=p;
+  const finPrev = cfg.inicio ? addDays(cfg.inicio, cfg.diasObra) : null;
+  const finReal = cfg.inicio ? addDays(cfg.inicio, cfg.diasObra+(cfg.retraso||0)) : null;
+  const todayStr = today();
+  const diasTranscurridos = cfg.inicio ? Math.max(0,daysBetween(cfg.inicio, todayStr)) : null;
+  const pctAvance = diasTranscurridos!==null && cfg.diasObra ? Math.min(100,(diasTranscurridos/cfg.diasObra)*100) : null;
+
+  // KPIs tiempo
+  document.getElementById('timeKPIs').innerHTML=`
+    <div class="kpi neutral"><div class="kpi-lbl">Inicio Obra</div><div class="kpi-val" style="font-size:16px">${cfg.inicio?fmtDate(cfg.inicio):'-'}</div><div class="kpi-sub">Duración prevista: ${cfg.diasObra} días</div></div>
+    <div class="kpi ${cfg.retraso>0?'warn':'ok'}"><div class="kpi-lbl">Fin Previsto</div><div class="kpi-val" style="font-size:16px">${finReal?fmtDate(finReal):'-'}</div><div class="kpi-sub">${cfg.retraso>0?'⚠ +'+cfg.retraso+' días retraso':'En plazo'}</div></div>
+    ${pctAvance!==null?`<div class="kpi ${pctAvance>100?'alert':pctAvance>80?'warn':'ok'}"><div class="kpi-lbl">Avance</div><div class="kpi-val">${pctAvance.toFixed(0)}%</div><div class="kpi-sub">${diasTranscurridos} de ${cfg.diasObra} días</div></div>`:''}
+    ${cfg.retraso>0?`<div class="kpi alert"><div class="kpi-lbl">Coste Retraso</div><div class="kpi-val">${fmt(cfg.deuda*cfg.retraso)}</div><div class="kpi-sub">${cfg.retraso} días × ${fmt(cfg.deuda)}/día</div></div>`:''}
+  `;
+
+  // Timeline
+  const tl = document.getElementById('timelineWrap'); tl.innerHTML='';
+  const milestones=[
+    {lbl:'Inicio de obra', date:cfg.inicio, type: cfg.inicio ? 'ok' : 'neutral'},
+    {lbl:'Fin previsto (calculadora)', date:finPrev, type:'neutral'},
+    ...(cfg.retraso>0?[{lbl:`Fin real estimado (+${cfg.retraso} días)`, date:finReal, type:'alert'}]:[]),
+    {lbl:'Hoy', date:todayStr, type:'neutral'},
+  ].filter(m=>m.date);
+  milestones.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  milestones.forEach((m,i)=>{
+    tl.innerHTML+=`<div class="tl-row">
+      <div class="tl-dot tl-dot-${m.type}"></div>
+      <div class="tl-lbl">${m.lbl}</div>
+      <div class="tl-date">${fmtDate(m.date)}</div>
+    </div>`;
+    if(i<milestones.length-1) tl.innerHTML+=`<div class="tl-line"></div>`;
+  });
+  if(pctAvance!==null){
+    tl.innerHTML+=`<div style="margin-top:14px;"><div style="font-size:11px;color:#888;margin-bottom:4px;">Progreso temporal: ${pctAvance.toFixed(0)}%</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" style="width:${Math.min(pctAvance,100)}%;background:${pctAvance>100?'#c0392b':pctAvance>80?'#e67e22':'#3b82f6'}"></div></div></div>`;
+  }
+
+  // Chart evolución retraso semanal
+  const history = p.retrasoHistory || [];
+  destroyC('chartTiempo');
+  if(history.length > 1){
+    charts['chartTiempo'] = new Chart(document.getElementById('chartTiempo'),{type:'line',
+      data:{
+        labels: history.map(r => new Date(r.fecha+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})),
+        datasets:[{
+          label:'Días de retraso',
+          data: history.map(r => r.dias),
+          borderColor:'#ef4444',
+          backgroundColor:'rgba(239,68,68,.1)',
+          fill:true, tension:.3, pointRadius:5,
+          pointBackgroundColor: history.map(r => r.dias > 0 ? '#ef4444' : '#27ae60')
+        }]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' días de retraso'}}},
+        scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9},stepSize:1}}}}});
+  } else {
+    // Si no hay historial aún, mostrar gráfico de días previsto
+    const tL=['Calculadora',...weekLabels.map((_,i)=>'S'+(i+1))];
+    const tBase=[cfg.diasObra,...weekLabels.map(()=>cfg.diasObra)];
+    const tVar=[0,...weekLabels.map((_,i)=>i===weekLabels.length-1&&cfg.retraso>0?cfg.retraso:0)];
+    charts['chartTiempo']=new Chart(document.getElementById('chartTiempo'),{type:'bar',
+      data:{labels:tL,datasets:[
+        {label:'Días previstos',data:tBase,backgroundColor:'#3b82f6',borderRadius:3,stack:'s'},
+        {label:'Retraso',data:tVar,backgroundColor:'#ef4444',borderRadius:3,stack:'s'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:11}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+' días'}}},
+        scales:{x:{stacked:true,ticks:{font:{size:8}}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:9}}}}}});
+  }
+
+  // Historial table
+  const histCard = document.getElementById('retrasoHistoryCard');
+  const histBody = document.getElementById('retrasoHistoryBody');
+  if(history.length > 0){
+    histCard.style.display = 'block';
+    histBody.innerHTML = '';
+    [...history].reverse().forEach((r, i, arr) => {
+      const prev = arr[i+1];
+      const variacion = prev ? r.dias - prev.dias : 0;
+      const coste = fmt(r.dias * cfg.deuda);
+      histBody.innerHTML += `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">${fmtDate(r.fecha)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-weight:600;color:${r.dias>0?'#c0392b':'#27ae60'}">${r.dias} días</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">${coste}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;color:${variacion>0?'#c0392b':variacion<0?'#27ae60':'#888'}">
+          ${variacion>0?'+'+variacion:variacion<0?variacion:'—'} días
+        </td>
+      </tr>`;
+    });
+  } else {
+    histCard.style.display = 'none';
+  }
+
+  // Pre-fill edit form
+  document.getElementById('edit-inicio').value = cfg.inicio||'';
+  document.getElementById('edit-finPrev').value = cfg.finPrev||'';
+  document.getElementById('edit-finReal').value = cfg.finReal||cfg.finPrev||'';
+
+  // Preview retraso en tiempo real
+  ['edit-inicio','edit-finPrev','edit-finReal'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      const fp = document.getElementById('edit-finPrev').value;
+      const fr = document.getElementById('edit-finReal').value;
+      const preview = document.getElementById('retrasoPreview');
+      if(!fp||!fr){preview.style.display='none';return;}
+      const diff = daysBetween(fp, fr);
+      preview.style.display = 'block';
+      if(diff > 0){ preview.style.background='#fdecea';preview.style.color='#c0392b';preview.textContent=`⚠ Retraso de ${diff} días`; }
+      else if(diff < 0){ preview.style.background='#eafaf1';preview.style.color='#27ae60';preview.textContent=`✓ Adelanto de ${Math.abs(diff)} días`; }
+      else { preview.style.background='#f0f7ff';preview.style.color='#1e40af';preview.textContent='✓ En plazo'; }
+    });
+  });
+}
+
+function saveTimeData(){
+  if(!currentCode) return;
+  const p = projects[currentCode];
+  const inicio  = document.getElementById('edit-inicio').value;
+  const finPrev = document.getElementById('edit-finPrev').value;
+  const finReal = document.getElementById('edit-finReal').value;
+
+  p.cfg.inicio  = inicio;
+  p.cfg.finPrev = finPrev;
+  p.cfg.finReal = finReal;
+  p.cfg.diasObra = daysBetween(inicio, finPrev) || p.cfg.diasObra || 120;
+  p.cfg.retraso  = daysBetween(finPrev, finReal) || 0;
+
+  // Historial semanal
+  if(!p.retrasoHistory) p.retrasoHistory = [];
+  const fechaHoy = today();
+  const yaExiste = p.retrasoHistory.findIndex(r => r.fecha === fechaHoy);
+  const entry = { fecha: fechaHoy, dias: p.cfg.retraso, finReal };
+  if(yaExiste >= 0) p.retrasoHistory[yaExiste] = entry;
+  else p.retrasoHistory.push(entry);
+  p.retrasoHistory.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+  save();
+  renderTiempos(p);
+  renderGlobal();
+
+  const btn = document.querySelector('#dtab-content-tiempo .btn-dark');
+  if(btn){ btn.textContent = '✓ Guardado'; setTimeout(()=>btn.textContent='Guardar fechas', 2000); }
+}
+
+// ── PAGOS ──
+function renderPagos(p){
+  const pagos = p.pagos||[];
+  if(!pagos.length){
+    document.getElementById('pagosKPIs').innerHTML='<div style="color:#aaa;font-size:13px;padding:10px">No hay datos de pagos disponibles.</div>';
+    document.getElementById('pagosBody').innerHTML='<tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px">Sin datos</td></tr>';
+    destroyC('chartPagoscat'); destroyC('chartPagosEvol');
+    return;
+  }
+
+  const totalPagado = pagos.reduce((s,pg)=>s+pg.importe,0);
+  // Pendiente = presupuesto actual total - pagado
+  const actual = p.totals ? (lastNonZero(p.totals.weeks)||p.totals.calc) : 0;
+  const pendiente = Math.max(0, actual - totalPagado);
+
+  document.getElementById('pagosKPIs').innerHTML=`
+    <div class="kpi neutral"><div class="kpi-lbl">Total Pagado</div><div class="kpi-val">${fmt(totalPagado)}</div><div class="kpi-sub">${pagos.length} transacciones</div></div>
+    <div class="kpi ${pendiente>0?'warn':'ok'}"><div class="kpi-lbl">Pendiente de Pago</div><div class="kpi-val">${fmt(pendiente)}</div><div class="kpi-sub">Ppto actual: ${fmt(actual)}</div></div>
+    <div class="kpi ok"><div class="kpi-lbl">% Pagado</div><div class="kpi-val">${actual?(totalPagado/actual*100).toFixed(0):0}%</div><div class="kpi-sub">sobre presupuesto actual</div></div>
+  `;
+
+  // Chart donut por categoría (Nivel 2)
+  const catPagos={};
+  pagos.forEach(pg=>{ const k=pg.categoria||'Sin categoría'; catPagos[k]=(catPagos[k]||0)+pg.importe; });
+  destroyC('chartPagoscat');
+  charts['chartPagoscat']=new Chart(document.getElementById('chartPagoscat'),{type:'doughnut',
+    data:{labels:Object.keys(catPagos),datasets:[{data:Object.values(catPagos),backgroundColor:Object.keys(catPagos).map(catColor),borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:9},boxWidth:10}},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)}}}}});
+
+  // Chart evolución por semana
+  const semanaPagos={};
+  pagos.forEach(pg=>{
+    const k = pg.semana ? 'S'+String(pg.semana).replace(/\D/g,'') : 'Sin semana';
+    semanaPagos[k] = (semanaPagos[k]||0) + pg.importe;
+  });
+  // Ordenar semanas numéricamente
+  const semanas = Object.keys(semanaPagos).sort((a,b)=>{
+    const na=parseInt(a.replace(/\D/g,''))||0, nb=parseInt(b.replace(/\D/g,''))||0;
+    return na-nb;
+  });
+  let acum=0;
+  const evolData = semanas.map(s=>{ acum+=semanaPagos[s]; return acum; });
+  destroyC('chartPagosEvol');
+  charts['chartPagosEvol']=new Chart(document.getElementById('chartPagosEvol'),{type:'line',
+    data:{labels:semanas,datasets:[
+      {label:'Pagos acumulados',data:evolData,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.1)',fill:true,tension:.3,pointRadius:4},
+      {label:'Presupuesto',data:semanas.map(()=>actual),borderColor:'#ef4444',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:11}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k €',font:{size:9}}}}}});
+
+  // Tabla: solo proveedor, categoría, importe
+  const tb=document.getElementById('pagosBody'); tb.innerHTML='';
+  [...pagos].forEach(pg=>{
+    tb.innerHTML+=`<tr>
+      <td>${pg.concepto||'-'}</td>
+      <td>${pg.proveedor||'-'}</td>
+      <td>${pg.categoria||'-'}</td>
+      <td><strong>${fmt(pg.importe)}</strong></td>
+    </tr>`;
+  });
+}
+
+// ── NOTAS ──
+function openNote(code){
+  noteCode=code;
+  document.getElementById('noteProjLabel').textContent='Proyecto: '+code;
+  document.getElementById('noteText').value=projects[code].notes||'';
+  document.getElementById('noteOverlay').style.display='flex';
+}
+function closeNote(){ document.getElementById('noteOverlay').style.display='none'; }
+function saveNote(){
+  if(!noteCode) return;
+  projects[noteCode].notes=document.getElementById('noteText').value.trim();
+  save();
+  renderGlobal();
+  closeNote();
+}
+
+// ── INIT ──
+loadSaved();
+showTab('global');
+</script>
+</body>
+</html>
