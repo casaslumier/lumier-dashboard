@@ -589,12 +589,13 @@ function showDTab(t){
     document.getElementById('dtab-content-'+n).style.display = n===t?'block':'none';
     document.getElementById('dtab-'+n).className = 'tab'+(n===t?' active':'');
   });
-  // Renderizar la pestaña al hacer clic
-  if(currentCode){
-    const p = projects[currentCode];
+  if(!currentCode) return;
+  const p = projects[currentCode];
+  if(!p) return;
+  setTimeout(()=>{
     if(t==='tiempo') renderTiempos(p);
     else if(t==='pagos') renderPagos(p);
-  }
+  }, 50);
 }
 
 // ── GLOBAL ──
