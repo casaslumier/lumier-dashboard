@@ -406,32 +406,14 @@ document.getElementById('inp-venta').addEventListener('input', e => {
   document.getElementById('inp-deuda').value = v > 0 ? deuda.toFixed(2) + ' €/día' : '';
 });
 
-// ── FETCH FROM SHEETS via JSONP ──
-function fetchSheet(url, tab){
-  return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    const apiUrl = `${SCRIPT_URL}?url=${encodeURIComponent(url)}&tab=${encodeURIComponent(tab)}&callback=${cbName}`;
-    let done = false;
-
-    window[cbName] = (json) => {
-      done = true;
-      delete window[cbName];
-      script.remove();
-      if(json.error) reject(new Error(json.error + (json.available ? ' · Pestañas: '+json.available.join(', ') : '')));
-      else resolve(json.data);
-    };
-
-    script.onerror = () => {
-      if(!done){ done=true; delete window[cbName]; script.remove(); reject(new Error('No se pudo conectar con el script.')); }
-    };
-    setTimeout(() => {
-      if(!done){ done=true; delete window[cbName]; script.remove(); reject(new Error('Tiempo de espera agotado. Verifica la URL del script.')); }
-    }, 15000);
-
-    script.src = apiUrl;
-    document.head.appendChild(script);
-  });
+// ── FETCH FROM SHEETS via fetch normal (GitHub Pages) ──
+async function fetchSheet(url, tab){
+  const apiUrl = `${SCRIPT_URL}?url=${encodeURIComponent(url)}&tab=${encodeURIComponent(tab)}`;
+  const res = await fetch(apiUrl);
+  if(!res.ok) throw new Error('Error HTTP: '+res.status);
+  const json = await res.json();
+  if(json.error) throw new Error(json.error + (json.available ? ' · Pestañas: '+json.available.join(', ') : ''));
+  return json.data;
 }
 
 async function fetchProject(code, showLoading=true){
